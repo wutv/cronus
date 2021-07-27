@@ -1,24 +1,4 @@
-const { isClass } = require("./Util.js")
-;
-/**
- * Returns if the string is somewhat falsey.
- * @param {any} i
- * @returns {Boolean}
- */
-
-function isFalsey(i) {
-    return [undefined, null, false].includes(i);
-}
-
-/**
- * Determines whether a string is "[object Object]".
- * @param {String} input
- * @returns {Boolean}
- */
-
-function isObjectObject(input) {
-    return input === "[object Object]";
-}
+const { isClass, isFalsey, isObjectObject } = require("./Util.js");
 
 /**
  * Resolves the type of input.
@@ -49,4 +29,4 @@ function resolveError(error, type) {
     else if (type === "notProvided") return `The ${error} was not provided.`;
 }
 
-module.exports = { resolveError, resolveTypeofMessage, isFalsey, isObjectObject };
+module.exports = { resolveError, resolveTypeofMessage };

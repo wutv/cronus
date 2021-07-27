@@ -1,9 +1,5 @@
-const { Client, Message, Collection } = require("discord.js"),
+const Discord = require("discord.js"),
     CommandError = require("../util/CommandError.js");
-
-function isString(str) {
-    return typeof str === "string";
-}
 
 module.exports = class BaseCommand {
     constructor(client, options) {
@@ -22,6 +18,28 @@ module.exports = class BaseCommand {
          */
 
         this.description = options.description;
+
+        /**
+         * Expected arguments.
+         * @type {Array<Array<String, String>>}
+         */
+
+        this.expectedArgs = options.args;
+
+        const baseFlags = options.flags;        
+        if (baseFlags) {
+            const newFlags = baseFlags.map(flag => ({
+                name: flag.name,
+                expectedType: flag.expectedType || "string",
+                seperator: flags.seperator || "-",
+            }));
+
+            /**
+             * Command flags.
+             */
+
+            this.flags = newFlags;
+        }
 
         if (options.permissions) {
             const { user: userP, client: clientP } = options.permissions;
@@ -45,13 +63,6 @@ module.exports = class BaseCommand {
             }
         }
 
-        /**
-         * Command run function.
-         * @type {(message: Message, args: Array) => Promise<undefined | Promise<Message>> | void}
-         */
-
-        this.run = options.run;
-
         if (options.subCommands) {
             /**
              * Subcommands.
@@ -62,6 +73,46 @@ module.exports = class BaseCommand {
             if (options.subCommands && options.subCommands.baseAuth) this.subCommands.baseAuth = options.subCommands.baseAuth;
         }
     }
+
+    /**
+     * Run the command.
+     * @param {Discord.Message} message Message that triggered this command.
+     * @param {Array | void} args Command input.
+     * @param {Object<String, String | Boolean | Number> | void} flags Command flags.
+     * @returns {?Promise<Message>}
+     */
+
+    run(message, args, flags) {
+        // Do something with args.
+        args;
+
+        if (message) {
+            message.channel.send({
+                embeds: [
+                    {
+                        author: { title: "An Error Occured.", avatarURL: message.author.displayAvatarURL() },
+                        description: "This command doesn't have a run method. Please report this to the developers.",
+                    },
+                ],
+                footer: {
+                    text: flags.flags === "true" ? `${message.member.displayName} | Flags valid.` : message.member.displayName,
+                },
+            });
+        }
+
+        throw new CommandError("typeof", {
+            expected: Function,
+            got: undefined,
+            name: "run function",
+        });
+    }
+
+    /**
+     *
+     * @param {Discord.Client} client
+     * @param {Object} options
+     */
+
     static validateOptions(client, options) {
         /**
          * Check if client isn't provided.
@@ -73,9 +124,9 @@ module.exports = class BaseCommand {
          * Check if client isn't client.
          */
 
-        if (!(client instanceof Client))
+        if (!(client instanceof Discord.Client))
             throw new CommandError("typeof", {
-                expected: Client,
+                expected: Discord.Client,
                 got: options.name,
                 name: "client",
             });
@@ -112,23 +163,6 @@ module.exports = class BaseCommand {
                 expected: "",
                 got: options.description,
                 name: "description",
-            });
-
-        /**
-         * Check if there is a run function.
-         */
-
-        if (!options.run) throw new CommandError("notProvided", "run function");
-
-        /**
-         * Check if the run function is actually a function.
-         */
-
-        if (typeof options.run !== "function")
-            throw new Error("typeof", {
-                expected: Function,
-                got: options.run,
-                name: "run function",
             });
 
         /**
@@ -194,6 +228,25 @@ module.exports = class BaseCommand {
         }
 
         /**
+         * Flags.
+         */
+        const commandFlags = options.flags;
+        if (!Array.isArray(commandFlags)) throw new CommandError("typeof", {
+            expected: [],
+            got: commandFlags,
+            name: "command flags"
+        });
+
+        for (const flag of commandFlags) {
+            if (typeof flag !== "object") throw new CommandError("typeof", {
+                expected: Object,
+                got: flag,
+                name: "command flag"
+            });
+            if (!flag.name) throw new CommandError("notProvided", "command flag name");
+        };
+
+        /**
          * Check subcommands.
          */
 
@@ -208,13 +261,12 @@ module.exports = class BaseCommand {
                 });
 
             for (const subRaw of subC) {
-                
                 if (!Array.isArray(subRaw))
-                throw new CommandError("typeof", {
-                    expected: [],
-                    got: subRaw,
-                    name: "subcommand",
-                });
+                    throw new CommandError("typeof", {
+                        expected: [],
+                        got: subRaw,
+                        name: "subcommand",
+                    });
 
                 const [name, subRun] = rubRaw;
 
