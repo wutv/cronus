@@ -1,289 +1,319 @@
-const Discord = require("discord.js"),
-    CommandError = require("../util/CommandError.js");
+const { Message, Collection, Client } = require("discord.js"),
+	CommandError = require("../util/CommandError.js"),
+	{ isString } = require("../util/Util.js");
 
-module.exports = class BaseCommand {
-    constructor(client, options) {
-        this.constructor.validateOptions(client, options);
+class Command {
+	constructor(client, options) {
+		this.constructor.validateOptions(client, options);
 
-        /**
-         * Command name.
-         * @type {String}
-         */
+		/**
+		 * Command name.
+		 * @type {String}
+		 */
 
-        this.name = options.name;
+		this.name = options.name;
 
-        /**
-         * Command description.
-         * @type {String}
-         */
+		/**
+		 * Command description.
+		 * @type {String}
+		 */
 
-        this.description = options.description;
+		this.description = options.description;
 
-        /**
-         * Expected arguments.
-         * @type {Array<Array<String, String>>}
-         */
+		/**
+		 * Expected arguments.
+		 * @type {Array<Array<String, String>>}
+		 */
 
-        this.expectedArgs = options.args;
+		this.expectedArgs = options.args;
 
-        const baseFlags = options.flags;        
-        if (baseFlags) {
-            const newFlags = baseFlags.map(flag => ({
-                name: flag.name,
-                expectedType: flag.expectedType || "string",
-                seperator: flags.seperator || "-",
-            }));
+		const baseFlags = options.flags;
+		if (baseFlags) {
+			let newFlags = baseFlags.map((flag) => ({
+				name: flag.name,
+				expectedType: flag.expectedType || "string",
+				seperator: flag.seperator || "-",
+			}));
 
-            /**
-             * Command flags.
-             */
+			if (!newFlags)
+				newFlags = [
+					{
+						name: "flags",
+						expectedType: "string",
+						seperator: ["--", "-"],
+					},
+				];
 
-            this.flags = newFlags;
-        }
+			/**
+			 * Command flags.
+			 * @type {?Array<Object<String, any>>}
+			 */
 
-        if (options.permissions) {
-            const { user: userP, client: clientP } = options.permissions;
-            this.permissions = {};
+			this.flags = newFlags;
+		}
 
-            if (userP) {
-                /**
-                 * User permissions.
-                 * @type {Array}
-                 */
+		if (options.permissions) {
+			const { user: userP, client: clientP } = options.permissions;
+			this.permissions = {};
 
-                this.permissions.user = userP;
-            }
-            if (clientP) {
-                /**
-                 * Client permissions.
-                 * @type {Array}
-                 */
+			if (userP) {
+				/**
+				 * User permissions.
+				 * @type {Array}
+				 */
 
-                this.permissions.client = clientP;
-            }
-        }
+				this.permissions.user = userP;
+			}
+			if (clientP) {
+				/**
+				 * Client permissions.
+				 * @type {Array}
+				 */
 
-        if (options.subCommands) {
-            /**
-             * Subcommands.
-             * @type {Collection}
-             */
+				this.permissions.client = clientP;
+			}
+		}
 
-            this.subCommands = new Collection(options.subCommands.commands);
-            if (options.subCommands && options.subCommands.baseAuth) this.subCommands.baseAuth = options.subCommands.baseAuth;
-        }
-    }
+		if (options.subCommands) {
+			/**
+			 * Subcommands.
+			 * @type {Collection}
+			 */
 
-    /**
-     * Run the command.
-     * @param {Discord.Message} message Message that triggered this command.
-     * @param {Array | void} args Command input.
-     * @param {Object<String, String | Boolean | Number> | void} flags Command flags.
-     * @returns {?Promise<Message>}
-     */
+			this.subCommands = new Collection(options.subCommands.commands);
+			if (options.subCommands && options.subCommands.baseAuth) this.subCommands.baseAuth = options.subCommands.baseAuth;
+		}
+	}
 
-    run(message, args, flags) {
-        // Do something with args.
-        args;
+	/**
+	 * Run the command.
+	 * @param {Message} message Message that triggered this command.
+	 * @param {Array | void} args Command input.
+	 * @param {Object<String, String | Boolean | Number> | void} flags Command flags.
+	 * @returns {?Promise<Message>}
+	 */
 
-        if (message) {
-            message.channel.send({
-                embeds: [
-                    {
-                        author: { title: "An Error Occured.", avatarURL: message.author.displayAvatarURL() },
-                        description: "This command doesn't have a run method. Please report this to the developers.",
-                    },
-                ],
-                footer: {
-                    text: flags.flags === "true" ? `${message.member.displayName} | Flags valid.` : message.member.displayName,
-                },
-            });
-        }
+	run(message, args, flags) {
+		if (!(message instanceof Message)) throw new CommandError("typeof", {
+			expected: Message,
+			got: message,
+			name: "run function message param"
+		});
+		// Do something with args.
+		args;
 
-        throw new CommandError("typeof", {
-            expected: Function,
-            got: undefined,
-            name: "run function",
-        });
-    }
+		if (message) {
+			message.channel.send({
+				embeds: [
+					{
+						author: { title: "An Error Occured.", avatarURL: message.author.displayAvatarURL() },
+						description: "This command doesn't have a run method. Please report this to the developers.",
+					},
+				],
+				footer: {
+					text: flags.flags === "true" ? `${message.member.displayName} | Flags valid.` : message.member.displayName,
+				},
+			});
+		}
 
-    /**
-     *
-     * @param {Discord.Client} client
-     * @param {Object} options
-     */
+		throw new CommandError("typeof", {
+			expected: Function,
+			got: undefined,
+			name: "run function",
+		});
+	}
 
-    static validateOptions(client, options) {
-        /**
-         * Check if client isn't provided.
-         */
+	/**
+	 *
+	 * @param {Client} client
+	 * @param {Object} options
+	 */
 
-        if (!client) throw new CommandError("notProvided", "client");
+	static validateOptions(client, options) {
+		/**
+		 * Check if client isn't provided.
+		 */
 
-        /**
-         * Check if client isn't client.
-         */
+		if (!client) throw new CommandError("notProvided", "client");
 
-        if (!(client instanceof Discord.Client))
-            throw new CommandError("typeof", {
-                expected: Discord.Client,
-                got: options.name,
-                name: "client",
-            });
+		/**
+		 * Check if client isn't client.
+		 */
 
-        /**
-         * Check if name has been provided.
-         */
+		if (!(client instanceof Client))
+			throw new CommandError("typeof", {
+				expected: Client,
+				got: options.name,
+				name: "client",
+			});
 
-        if (!options.name) throw new CommandError("notProvided", "name");
+		/**
+		 * Check if name has been provided.
+		 */
 
-        /**
-         * Check if command name is a string.
-         */
+		if (!options.name) throw new CommandError("notProvided", "name");
 
-        if (!isString(options.name))
-            throw new CommandError("typeof", {
-                expected: "",
-                got: options.name,
-                name: "name",
-            });
+		/**
+		 * Check if command name is a string.
+		 */
 
-        /**
-         * Check if description has been provided.
-         */
+		if (!isString(options.name))
+			throw new CommandError("typeof", {
+				expected: "",
+				got: options.name,
+				name: "name",
+			});
 
-        if (!options.description) throw new CommandError("notProvided", "client");
+		/**
+		 * Check if description has been provided.
+		 */
 
-        /**
-         * Check if description is a string.
-         */
+		if (!options.description) throw new CommandError("notProvided", "client");
 
-        if (!isString(options.description))
-            throw new CommandError("typeof", {
-                expected: "",
-                got: options.description,
-                name: "description",
-            });
+		/**
+		 * Check if description is a string.
+		 */
 
-        /**
-         * Check for aliases.
-         */
+		if (!isString(options.description))
+			throw new CommandError("typeof", {
+				expected: "",
+				got: options.description,
+				name: "description",
+			});
 
-        if (options.aliases) {
-            if (!Array.isArray(options.aliases))
-                throw new CommandError("typeof", {
-                    expected: [],
-                    got: options.aliases,
-                    name: "aliases",
-                });
-            for (const ali of options.aliases) {
-                if (!isString(ali))
-                    throw new CommandError("typeof", {
-                        expected: "",
-                        got: ali,
-                        name: "alias",
-                    });
-            }
-        }
+		/**
+		 * Check for aliases.
+		 */
 
-        /**
-         * Check permissions.
-         */
+		if (options.aliases) {
+			if (!Array.isArray(options.aliases))
+				throw new CommandError("typeof", {
+					expected: [],
+					got: options.aliases,
+					name: "aliases",
+				});
+			for (const ali of options.aliases) {
+				if (!isString(ali))
+					throw new CommandError("typeof", {
+						expected: "",
+						got: ali,
+						name: "alias",
+					});
+			}
+		}
 
-        if (options.permissions) {
-            const { user: userP, client: clientP } = options.permissions;
+		/**
+		 * Check permissions.
+		 */
 
-            if (userP) {
-                if (!Array.isArray(userP))
-                    throw new CommandError("typeof", {
-                        expected: [],
-                        got: userP,
-                        name: "user permissions",
-                    });
+		if (options.permissions) {
+			const { user: userP, client: clientP } = options.permissions;
 
-                for (const perm of userP)
-                    if (!isString(perm))
-                        throw new CommandError("typeof", {
-                            expected: "",
-                            got: perm,
-                            name: "user permission",
-                        });
-            }
-            if (clientP) {
-                if (!Array.isArray(clientP))
-                    throw new CommandError("typeof", {
-                        expected: [],
-                        got: userP,
-                        name: "client permissions",
-                    });
+			if (userP) {
+				if (!Array.isArray(userP))
+					throw new CommandError("typeof", {
+						expected: [],
+						got: userP,
+						name: "user permissions",
+					});
 
-                for (const perm of clientP)
-                    if (!isString(perm))
-                        throw new CommandError("typeof", {
-                            expected: "",
-                            got: perm,
-                            name: "client permission",
-                        });
-            }
-        }
+				for (const perm of userP)
+					if (!isString(perm))
+						throw new CommandError("typeof", {
+							expected: "",
+							got: perm,
+							name: "user permission",
+						});
+			}
+			if (clientP) {
+				if (!Array.isArray(clientP))
+					throw new CommandError("typeof", {
+						expected: [],
+						got: userP,
+						name: "client permissions",
+					});
 
-        /**
-         * Flags.
-         */
-        const commandFlags = options.flags;
-        if (!Array.isArray(commandFlags)) throw new CommandError("typeof", {
-            expected: [],
-            got: commandFlags,
-            name: "command flags"
-        });
+				for (const perm of clientP)
+					if (!isString(perm))
+						throw new CommandError("typeof", {
+							expected: "",
+							got: perm,
+							name: "client permission",
+						});
+			}
+		}
 
-        for (const flag of commandFlags) {
-            if (typeof flag !== "object") throw new CommandError("typeof", {
-                expected: Object,
-                got: flag,
-                name: "command flag"
-            });
-            if (!flag.name) throw new CommandError("notProvided", "command flag name");
-        };
+		/**
+		 * Flags.
+		 */
+		const commandFlags = options.flags;
+		if (!Array.isArray(commandFlags))
+			throw new CommandError("typeof", {
+				expected: [],
+				got: commandFlags,
+				name: "command flags",
+			});
 
-        /**
-         * Check subcommands.
-         */
+		for (const flag of commandFlags) {
+			if (typeof flag !== "object")
+				throw new CommandError("typeof", {
+					expected: Object,
+					got: flag,
+					name: "command flag",
+				});
+			if (!flag.name) throw new CommandError("notProvided", "command flag name");
+			const seperator = flag.seperator;
+			if (seperator && !isString(seperator))
+				throw new CommandError("typeof", {
+					expected: String
+				});
+		}
 
-        if (options.subCommands) {
-            const { commands: subC } = subCommands;
-            if (!subC) throw new CommandError("notProvided", "sub commands");
-            if (!Array.isArray(subC))
-                throw new CommandError("typeof", {
-                    expected: [],
-                    got: subC,
-                    name: "subcommands",
-                });
+		/**
+		 * Check subcommands.
+		 */
 
-            for (const subRaw of subC) {
-                if (!Array.isArray(subRaw))
-                    throw new CommandError("typeof", {
-                        expected: [],
-                        got: subRaw,
-                        name: "subcommand",
-                    });
+		if (options.subCommands) {
+			const { commands: subC } = options.subCommands;
+			if (!subC) throw new CommandError("notProvided", "sub commands");
+			if (!Array.isArray(subC))
+				throw new CommandError("typeof", {
+					expected: [],
+					got: subC,
+					name: "subcommands",
+				});
 
-                const [name, subRun] = rubRaw;
+			for (const subRaw of subC) {
+				if (!Array.isArray(subRaw))
+					throw new CommandError("typeof", {
+						expected: [],
+						got: subRaw,
+						name: "subcommand",
+					});
 
-                if (!isString(name))
-                    throw new CommandError("typeof", {
-                        expected: "",
-                        got: name,
-                        name: "subcommand",
-                    });
+				const [name, subRun] = subRaw;
 
-                if (typeof subRun !== "function")
-                    throw new CommandError("typeof", {
-                        expected: Function,
-                        got: name,
-                        name: "subcommand",
-                    });
-            }
-        }
-    }
-};
+				if (!isString(name))
+					throw new CommandError("typeof", {
+						expected: "",
+						got: name,
+						name: "subcommand",
+					});
+
+				if (typeof subRun !== "function")
+					throw new CommandError("typeof", {
+						expected: Function,
+						got: name,
+						name: "subcommand",
+					});
+			}
+		}
+	}
+}
+
+class PingCommand extends Command {
+	constructor(client) {
+		super(client, {});
+	}
+}
+new PingCommand(new Client({ intents: ["DIRECT_MESSAGES", "DIRECT_MESSAGE_REACTIONS"] }), {});

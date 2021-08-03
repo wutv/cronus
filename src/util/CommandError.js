@@ -6,9 +6,9 @@ const { resolveError, resolveTypeofMessage } = require("./ErrorUtil.js");
  */
 
 const options = {
-    invalid: "Invalid Options Error",
-    typeof: "Unexpected Typeof Error",
-    notProvided: "Not provided Error",
+	invalid: "Invalid Options Error",
+	typeof: "Unexpected Typeof Error",
+	notProvided: "Not Provided Error",
 };
 
 /**
@@ -17,35 +17,34 @@ const options = {
  */
 
 module.exports = class CommandError extends Error {
-    constructor(type, error) {
-        super(`${options[type]}(${resolveError(error, type)})`);
+	constructor(type, error) {
+		super(`${options[type]}: ${resolveError(error, type)}`);
 
-        Object.defineProperty(this, "type", {
-            enumerable: false,
-            writable: true,
-        });
+		Object.defineProperty(this, "type", {
+			writable: true,
+		});
 
-        /**
-         * Error type.
-         * @type {String}
-         */
+		/**
+		 * Error type.
+		 * @type {String}
+		 */
 
-        this.type = type;
+		this.type = type;
 
-        if (this.type === "typeof") {
-            /**
-             * Expected input.
-             * @type {String}
-             */
+		if (this.type === "typeof") {
+			/**
+			 * Expected input.
+			 * @type {String}
+			 */
 
-            this.expected = resolveTypeofMessage(error.expected);
+			this.expected = resolveTypeofMessage(error.expected);
 
-            /**
-             * Value got.
-             * @type {any}
-             */
+			/**
+			 * Value got.
+			 * @type {any}
+			 */
 
-            this.got = resolveTypeofMessage(error.expected);
-        }
-    }
+			this.got = resolveTypeofMessage(error.expected);
+		}
+	}
 };

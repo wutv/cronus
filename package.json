@@ -1,14 +1,17 @@
 {
-  "name": "cronus",
-  "version": "1.0.0",
-  "description": "A simple and easy-to-use framework for the library Discord.js.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "wutv",
-  "license": "ISC",
-  "dependencies": {
-    "discord.js": "^13.0.0-dev.4886ae2.1627128182"
-  }
+	"name": "cronus",
+	"version": "1.0.0",
+	"description": "A simple and easy-to-use framework for the library Discord.js.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "wutv",
+	"license": "ISC",
+	"dependencies": {
+		"discord.js": "^13.0.0-dev.4886ae2.1627128182"
+	},
+	"devDependencies": {
+		"eslint": "^7.32.0"
+	}
 }
