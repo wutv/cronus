@@ -24,17 +24,7 @@ function isClass(obj) {
 
 function isString(str) {
 	// this is just a faster method of doing it. I don't want to have `typeof str === "string"` everywhere I want to check if something is a string.
-	return typeof str === "string";
-}
-
-/**
- * Determines whether a value is undefined, null, or false.
- * @param {any} i
- * @returns {Boolean}
- */
-
-function isFalsey(i) {
-	return [undefined, null, false].includes(i);
+	return (typeof str === "string") || str instanceof String;
 }
 
 /**
